@@ -168,7 +168,8 @@ func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error
 		client:  a.client,
 		machine: machine,
 		//awsClientBuilder:    a.awsClientBuilder,
-		configManagedClient: a.configManagedClient,
+		powerVSClientBuilder: a.powerVSClientBuilder,
+		configManagedClient:  a.configManagedClient,
 	})
 	if err != nil {
 		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)

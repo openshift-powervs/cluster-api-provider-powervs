@@ -76,9 +76,9 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	//	return nil, machineapierros.InvalidMachineConfiguration("failed to create aws client: %v", err.Error())
 	//}
 
-	powerVSClient, err := params.powerVSClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.ServiceInstanceID, params.configManagedClient)
+	powerVSClient, err := params.powerVSClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.ServiceInstanceID, providerSpec.Region, params.configManagedClient)
 	if err != nil {
-		return nil, machineapierros.InvalidMachineConfiguration("failed to create aws client: %v", err.Error())
+		return nil, machineapierros.InvalidMachineConfiguration("failed to create powervs client: %v", err.Error())
 	}
 
 	return &machineScope{

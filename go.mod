@@ -5,13 +5,14 @@ go 1.15
 require (
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20200921095234-26d1d0148c62
 	github.com/IBM-Cloud/power-go-client v1.0.55
+	github.com/IBM/go-sdk-core/v4 v4.5.1
+	github.com/IBM/vpc-go-sdk v1.0.1
 	github.com/aws/aws-sdk-go v1.35.20
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/go-logr/logr v0.3.0
 	github.com/golang/mock v1.4.4
-	github.com/onsi/ginkgo v1.15.0
-	github.com/onsi/gomega v1.10.5
+	github.com/onsi/ginkgo v1.15.0 // indirect
+	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/machine-api-operator v0.2.1-0.20210104142355-8e6ae0acdfcf
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210106101518-5d3f965b0344

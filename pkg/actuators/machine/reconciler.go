@@ -91,7 +91,7 @@ func (r *Reconciler) delete() error {
 	klog.Infof("%s: deleting machine", r.machine.Name)
 
 	existingInstance, err := r.getMachineInstance()
-	if err != nil {
+	if err != nil && err != client.ErrorInstanceNotFound {
 		metrics.RegisterFailedInstanceDelete(&metrics.MachineLabels{
 			Name:      r.machine.Name,
 			Namespace: r.machine.Namespace,
@@ -99,6 +99,9 @@ func (r *Reconciler) delete() error {
 		})
 		klog.Errorf("%s: error getting existing instances: %v", r.machine.Name, err)
 		return err
+	} else if err == client.ErrorInstanceNotFound {
+		klog.Warningf("%s: no instances found to delete for machine", r.machine.Name)
+		return nil
 	}
 
 	err = r.powerVSClient.DeleteInstance(*existingInstance.PvmInstanceID)
@@ -246,7 +249,7 @@ func (r *Reconciler) update() error {
 func (r *Reconciler) exists() (bool, error) {
 
 	existingInstance, err := r.getMachineInstance()
-	if err != nil {
+	if err != nil && err != client.ErrorInstanceNotFound {
 		// Reporting as update here, as successfull return value from the method
 		// later indicases that an instance update flow will be executed.
 		metrics.RegisterFailedInstanceUpdate(&metrics.MachineLabels{
@@ -282,7 +285,17 @@ func (r *Reconciler) exists() (bool, error) {
 	//	return false, nil
 	//}
 
-	return existingInstance != nil, err
+	if existingInstance == nil {
+		if r.machine.Spec.ProviderID != nil && *r.machine.Spec.ProviderID != "" && (r.machine.Status.LastUpdated == nil || r.machine.Status.LastUpdated.Add(requeueAfterSeconds*time.Second).After(time.Now())) {
+			klog.Infof("%s: Possible eventual-consistency discrepancy; returning an error to requeue", r.machine.Name)
+			return false, &machinecontroller.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
+		}
+
+		klog.Infof("%s: Instance does not exist", r.machine.Name)
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // isMaster returns true if the machine is part of a cluster's control plane

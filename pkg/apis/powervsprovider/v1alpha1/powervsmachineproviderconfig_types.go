@@ -50,6 +50,13 @@ type PowerVSMachineProviderConfig struct {
 	Spec   PowerVSMachineProviderConfigSpec   `json:"spec,omitempty"`
 	Status PowerVSMachineProviderConfigStatus `json:"status,omitempty"`
 
+	// Region for VPC client for load balancer
+	Region string `json:"region,omitempty"`
+
+	// LoadBalancers is the set of load balancers to which the new instance
+	// should be added once it is created.
+	LoadBalancers []LoadBalancerReference `json:"loadBalancers,omitempty"`
+
 	// ServiceInstanceID is the PowerVS service ID
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
@@ -79,6 +86,18 @@ type PowerVSMachineProviderConfig struct {
 
 	// KeyName is the name of the KeyPair to use for SSH
 	KeyName *string `json:"keyName,omitempty"`
+}
+
+// LoadBalancerReference is a reference to a load balancer on AWS.
+type LoadBalancerReference struct {
+	// The load balancer identifier.
+	ID string `json:"id"`
+
+	// The pool identifier.
+	PoolID string `json:"poolID"`
+
+	// The port number of the application running in the server member(machine)
+	Port int64 `json:"port"`
 }
 
 //+kubebuilder:object:root=true

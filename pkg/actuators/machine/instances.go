@@ -17,12 +17,15 @@ import (
 // removeStoppedMachine removes all instances of a specific machine that are in a stopped state.
 func removeStoppedMachine(machine *machinev1.Machine, client awsclient.Client) error {
 	instance, err := client.GetInstanceByName(machine.Name)
-	if err != nil {
+	if err != nil && err != awsclient.ErrorInstanceNotFound {
 		klog.Errorf("Error getting instance by name: %s, err: %v", machine.Name, err)
 		return fmt.Errorf("error getting instance by name: %s, err: %v", machine.Name, err)
+	} else if err == awsclient.ErrorInstanceNotFound {
+		klog.Infof("Instance not found with name: %n", machine.Name)
+		return nil
 	}
 
-	if *instance.Status == awsclient.InstanceStateNameShutoff {
+	if instance != nil && *instance.Status == awsclient.InstanceStateNameShutoff {
 		return client.DeleteInstance(*instance.PvmInstanceID)
 	}
 	return nil
@@ -50,13 +53,13 @@ func launchInstance(machine *machinev1.Machine, machineProviderConfig *powervspr
 		Body: &models.PVMInstanceCreate{
 			ImageID:     &machineProviderConfig.ImageID,
 			KeyPairName: *machineProviderConfig.KeyName,
-			Networks: nets,
-			ServerName: &machineProviderConfig.Name,
-			Memory:     &memory,
-			Processors: &cores,
-			ProcType:   &machineProviderConfig.ProcessorType,
-			SysType:    machineProviderConfig.MachineType,
-			UserData:   base64.StdEncoding.EncodeToString(userData),
+			Networks:    nets,
+			ServerName:  &machine.Name,
+			Memory:      &memory,
+			Processors:  &cores,
+			ProcType:    &machineProviderConfig.ProcessorType,
+			SysType:     machineProviderConfig.MachineType,
+			UserData:    base64.StdEncoding.EncodeToString(userData),
 		},
 	}
 	instances, err := client.CreateInstance(params)

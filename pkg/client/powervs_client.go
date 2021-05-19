@@ -3,12 +3,17 @@ package client
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
+
+	//"github.com/prometheus/common/log"
 
 	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
+	"github.com/IBM/go-sdk-core/v4/core"
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	//"github.com/openshift/cluster-api-provider-ibmcloud/pkg"
 	"time"
@@ -40,7 +45,11 @@ const (
 	InstanceStateNameBuild   = "BUILD"
 )
 
-type PowerVSClientBuilderFuncType func(client client.Client, secretName, namespace, region string, configManagedClient client.Client) (Client, error)
+var (
+	ErrorInstanceNotFound = errors.New("Instance Not Found")
+)
+
+type PowerVSClientBuilderFuncType func(client client.Client, secretName, namespace, cloudInstanceID, region string, configManagedClient client.Client) (Client, error)
 
 func apiKeyFromSecret(secret *corev1.Secret) (apiKey string, err error) {
 	switch {
@@ -48,6 +57,24 @@ func apiKeyFromSecret(secret *corev1.Secret) (apiKey string, err error) {
 		apiKey = string(secret.Data["IBMCLOUD_API_KEY"])
 	default:
 		return "", fmt.Errorf("invalid secret for powervs credentials")
+	}
+	return
+}
+
+func getAPIKey(ctrlRuntimeClient client.Client, secretName, namespace string) (apikey string, err error) {
+	if secretName == "" {
+		return "", machineapiapierrors.InvalidMachineConfiguration("empty secret name")
+	}
+	var secret corev1.Secret
+	if err := ctrlRuntimeClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: secretName}, &secret); err != nil {
+		if apimachineryerrors.IsNotFound(err) {
+			return "", machineapiapierrors.InvalidMachineConfiguration("powervs credentials secret %s/%s: %v not found", namespace, secretName, err)
+		}
+		return "", err
+	}
+	apikey, err = apiKeyFromSecret(&secret)
+	if err != nil {
+		return "", fmt.Errorf("failed to create shared credentials file from Secret: %v", err)
 	}
 	return
 }
@@ -77,8 +104,44 @@ func newBXSession(ctrlRuntimeClient client.Client, secretName, namespace, region
 	return s, nil
 }
 
-func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, cloudInstanceID string, configManagedClient client.Client) (Client, error) {
-	s, err := newBXSession(ctrlRuntimeClient, secretName, namespace, cloudInstanceID, configManagedClient)
+// getServiceURL returns the appropriate service URL for the VPC for given region or error
+func getServiceURL(region string) (string, error) {
+	switch region {
+	case "us-south", "us-east", "eu-gb", "eu-de", "au-syd", "jp-tok", "jp-osa", "ca-tor":
+		return fmt.Sprintf("https://%s.iaas.cloud.ibm.com/v1", region), nil
+	default:
+		return "", fmt.Errorf("invalid region: %s", region)
+	}
+}
+
+func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, cloudInstanceID, region string, configManagedClient client.Client) (Client, error) {
+	apikey, err := getAPIKey(ctrlRuntimeClient, secretName, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := bxsession.New(&bluemix.Config{BluemixAPIKey: apikey})
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the region as us-south if not set
+	if region == "" {
+		region = "us-south"
+	}
+
+	url, err := getServiceURL(region)
+	if err != nil {
+		return nil, err
+	}
+
+	vpcClient, err := vpcv1.NewVpcV1(&vpcv1.VpcV1Options{
+		Authenticator: &core.IamAuthenticator{
+			ApiKey: apikey,
+		},
+		URL: url,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +149,7 @@ func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, 
 	c := &powerVSClient{
 		cloudInstanceID: cloudInstanceID,
 		Session:         s,
+		VPCClient:       vpcClient,
 	}
 
 	err = authenticateAPIKey(s)
@@ -109,13 +173,13 @@ func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, 
 	if err != nil {
 		return nil, err
 	}
-	region, err := utils.GetRegion(resource.RegionID)
+	r, err := utils.GetRegion(resource.RegionID)
 	if err != nil {
 		return nil, err
 	}
 	zone := resource.RegionID
 
-	c.session, err = ibmpisession.New(c.Config.IAMAccessToken, region, true, time.Hour, c.User.Account, zone)
+	c.session, err = ibmpisession.New(c.Config.IAMAccessToken, r, true, time.Hour, c.User.Account, zone)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +195,7 @@ type powerVSClient struct {
 	cloudInstanceID string
 
 	*bxsession.Session
+	VPCClient      *vpcv1.VpcV1
 	User           *User
 	ResourceClient controllerv2.ResourceServiceInstanceRepository
 	session        *ibmpisession.IBMPISession
@@ -161,7 +226,7 @@ func (p *powerVSClient) GetInstanceByName(name string) (*models.PVMInstance, err
 			return p.GetInstance(*i.PvmInstanceID)
 		}
 	}
-	return nil, fmt.Errorf("instance not found: %s", name)
+	return nil, ErrorInstanceNotFound
 }
 
 func (p *powerVSClient) GetInstances() (*models.PVMInstances, error) {

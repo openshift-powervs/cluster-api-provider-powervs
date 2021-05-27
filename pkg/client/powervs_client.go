@@ -8,6 +8,7 @@ import (
 	//"github.com/prometheus/common/log"
 
 	"github.com/IBM-Cloud/bluemix-go"
+	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -40,16 +41,25 @@ import (
 const (
 	TIMEOUT = time.Hour
 
+	DefaultCredentialNamespace = "openshift-machine-api"
+	DefaultCredentialSecret    = "powervs-credentials-secret"
+
 	InstanceStateNameShutoff = "SHUTOFF"
 	InstanceStateNameActive  = "ACTIVE"
 	InstanceStateNameBuild   = "BUILD"
+
+	PowerServiceType = "power-iaas"
 )
 
 var (
 	ErrorInstanceNotFound = errors.New("Instance Not Found")
 )
 
-type PowerVSClientBuilderFuncType func(client client.Client, secretName, namespace, cloudInstanceID, region string, configManagedClient client.Client) (Client, error)
+func FormatProviderID(instanceID string) string {
+	return fmt.Sprintf("powervs:///%s", instanceID)
+}
+
+type PowerVSClientBuilderFuncType func(client client.Client, secretName, namespace, cloudInstanceID, region string) (Client, error)
 
 func apiKeyFromSecret(secret *corev1.Secret) (apiKey string, err error) {
 	switch {
@@ -61,7 +71,7 @@ func apiKeyFromSecret(secret *corev1.Secret) (apiKey string, err error) {
 	return
 }
 
-func getAPIKey(ctrlRuntimeClient client.Client, secretName, namespace string) (apikey string, err error) {
+func GetAPIKey(ctrlRuntimeClient client.Client, secretName, namespace string) (apikey string, err error) {
 	if secretName == "" {
 		return "", machineapiapierrors.InvalidMachineConfiguration("empty secret name")
 	}
@@ -114,8 +124,8 @@ func getServiceURL(region string) (string, error) {
 	}
 }
 
-func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, cloudInstanceID, region string, configManagedClient client.Client) (Client, error) {
-	apikey, err := getAPIKey(ctrlRuntimeClient, secretName, namespace)
+func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, cloudInstanceID, region string) (Client, error) {
+	apikey, err := GetAPIKey(ctrlRuntimeClient, secretName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +199,27 @@ func NewValidatedClient(ctrlRuntimeClient client.Client, secretName, namespace, 
 	return c, err
 }
 
+// NewClientMinimal is bare minimal client can be used for quarrying the resources
+func NewClientMinimal(apiKey string) (Client, error) {
+	s, err := bxsession.New(&bluemix.Config{BluemixAPIKey: apiKey})
+	if err != nil {
+		return nil, err
+	}
+
+	c := &powerVSClient{
+		Session: s,
+	}
+
+	ctrlv2, err := controllerv2.New(s)
+	if err != nil {
+		return c, err
+	}
+
+	c.ResourceClient = ctrlv2.ResourceServiceInstanceV2()
+
+	return c, nil
+}
+
 type powerVSClient struct {
 	region          string
 	zone            string
@@ -231,6 +262,22 @@ func (p *powerVSClient) GetInstanceByName(name string) (*models.PVMInstance, err
 
 func (p *powerVSClient) GetInstances() (*models.PVMInstances, error) {
 	return p.InstanceClient.GetAll(p.cloudInstanceID, TIMEOUT)
+}
+
+func (p *powerVSClient) GetCloudInstances() ([]bluemixmodels.ServiceInstanceV2, error) {
+	var instances []bluemixmodels.ServiceInstanceV2
+	svcs, err := p.ResourceClient.ListInstances(controllerv2.ServiceInstanceQuery{
+		Type: "service_instance",
+	})
+	if err != nil {
+		return svcs, fmt.Errorf("failed to list the service instances: %v", err)
+	}
+	for _, svc := range svcs {
+		if svc.Crn.ServiceName == PowerServiceType {
+			instances = append(instances, svc)
+		}
+	}
+	return instances, nil
 }
 
 func authenticateAPIKey(sess *bxsession.Session) error {

@@ -17,6 +17,7 @@ limitations under the License.
 package client
 
 import (
+	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 )
@@ -50,6 +51,7 @@ type Client interface {
 	GetInstanceByName(name string) (*models.PVMInstance, error)
 	GetInstances() (*models.PVMInstances, error)
 	DeleteInstance(id string) error
+	GetCloudInstances() ([]bluemixmodels.ServiceInstanceV2, error)
 	//DescribeImages(*ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
 	//DescribeDHCPOptions(input *ec2.DescribeDhcpOptionsInput) (*ec2.DescribeDhcpOptionsOutput, error)
 	//DescribeVpcs(*ec2.DescribeVpcsInput) (*ec2.DescribeVpcsOutput, error)

@@ -22,6 +22,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	machineactuator "github.com/openshift/cluster-api-provider-powervs/pkg/actuators/machine"
 	powervsclient "github.com/openshift/cluster-api-provider-powervs/pkg/client"
+	"github.com/openshift/cluster-api-provider-powervs/pkg/controller/nodeupdate"
 	"github.com/openshift/cluster-api-provider-powervs/pkg/version"
 	mapiv1beta1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	"github.com/openshift/machine-api-operator/pkg/controller/machine"
@@ -141,22 +142,27 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	configManagedClient, startCache, err := newConfigManagedClient(mgr)
-	if err != nil {
-		klog.Fatal(err)
-	}
-	mgr.Add(startCache)
+	//configManagedClient, startCache, err := newConfigManagedClient(mgr)
+	//if err != nil {
+	//	klog.Fatal(err)
+	//}
+	//mgr.Add(startCache)
 
 	// Initialize machine actuator.
 	machineActuator := machineactuator.NewActuator(machineactuator.ActuatorParams{
 		Client:               mgr.GetClient(),
 		EventRecorder:        mgr.GetEventRecorderFor("powervscontroller"),
 		PowerVSClientBuilder: powervsclient.NewValidatedClient,
-		ConfigManagedClient:  configManagedClient,
+		//ConfigManagedClient:  configManagedClient,
 	})
 
 	if err := machine.AddWithActuator(mgr, machineActuator); err != nil {
 		klog.Fatalf("Error adding actuator: %v", err)
+	}
+
+	if err := nodeupdate.Add(mgr); err != nil {
+		klog.Fatalf("failed to add providerID reconciler, with error: %v", err)
+
 	}
 
 	ctrl.SetLogger(klogr.New())

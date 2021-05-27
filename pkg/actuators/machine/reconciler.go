@@ -368,7 +368,7 @@ func (r *Reconciler) setProviderID(instance *models.PVMInstance) error {
 	}
 
 	//TODO: need to figure out a proper providerID here!
-	providerID := fmt.Sprintf("powervs:///%s", *instance.PvmInstanceID)
+	providerID := client.FormatProviderID(*instance.PvmInstanceID)
 
 	if existingProviderID != nil && *existingProviderID == providerID {
 		klog.Infof("%s: ProviderID already set in the machine Spec with value:%s", r.machine.Name, *existingProviderID)

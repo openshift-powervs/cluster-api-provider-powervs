@@ -76,7 +76,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	//	return nil, machineapierros.InvalidMachineConfiguration("failed to create aws client: %v", err.Error())
 	//}
 
-	powerVSClient, err := params.powerVSClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.ServiceInstanceID, providerSpec.Region, params.configManagedClient)
+	powerVSClient, err := params.powerVSClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.ServiceInstanceID, providerSpec.Region)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("failed to create powervs client: %v", err.Error())
 	}
@@ -179,7 +179,7 @@ func (s *machineScope) setProviderStatus(instance *models.PVMInstance, condition
 			}
 		}
 	}
-	klog.Infof("%s: finished calculating AWS status", s.machine.Name)
+	klog.Infof("%s: finished calculating PowerVS status", s.machine.Name)
 
 	s.machine.Status.Addresses = networkAddresses
 	s.providerStatus.Conditions = setPowerVSMachineProviderCondition(condition, s.providerStatus.Conditions)

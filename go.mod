@@ -15,7 +15,8 @@ require (
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/machine-api-operator v0.2.1-0.20210104142355-8e6ae0acdfcf
-	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210106101518-5d3f965b0344
+	github.com/pkg/errors v0.9.1
+	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210415051532-4cdd6a79c8fa
 	golang.org/x/tools v0.1.0 // indirect
 
 	// kube 1.18

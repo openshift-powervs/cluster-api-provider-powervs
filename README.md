@@ -61,26 +61,28 @@ Note: this info is RH only, it needs to be backported every time the `README.md`
     kustomize build config | kubectl apply -f -
     ```
 
-4. **Deploy secret with AWS credentials**
+4. **Deploy secret with Power VS credentials**
 
-   AWS actuator assumes existence of a secret file (references in machine object) with base64 encoded credentials:
+   Power VS nodeupdate controller assumes existence of a secret file:
 
    ```yaml
    apiVersion: v1
    kind: Secret
    metadata:
-     name: aws-credentials-secret
-     namespace: default
+     name: powervs-credentials-secret
+     namespace: openshift-machine-api
    type: Opaque
    data:
-     aws_access_key_id: FILLIN
-     aws_secret_access_key: FILLIN
+     IBMCLOUD_API_KEY: FILLIN
    ```
 
-   You can use `examples/render-aws-secrets.sh` script to generate the secret:
+   You can use `examples/render-powervs-secrets.sh` script to generate the secret:
    ```sh
-   ./examples/render-aws-secrets.sh examples/addons.yaml | kubectl apply -f -
+   # Set the IBMCLOUD_API_KEY with a proper IBM Cloud API Key
+   $ IBMCLOUD_API_KEY=<API_KEY> ./examples/render-powervs-secrets.sh examples/addons.yaml | kubectl apply -f -
    ```
+
+   Go to [How to create IBM Cloud API Key](#How-to-create-IBM-Cloud-API-Key) for creating API Key
 
 5. **Provision AWS resource**
 
@@ -203,6 +205,14 @@ Note: this info is RH only, it needs to be backported every time the `README.md`
    ```sh
    $ kubectl --kubeconfig=kubeconfig get nodes
    ```
+
+## How to create IBM Cloud API Key
+
+### Method 1: Create an API Key via IAM
+https://cloud.ibm.com/docs/account?topic=account-userapikey&locale=en#create_user_key
+
+### Method 2: Create an API Key via Service Account
+<!TODO: Add information>
 
 # Upstream Implementation
 Other branches of this repository may choose to track the upstream

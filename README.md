@@ -13,47 +13,15 @@ One needs to run the `imagebuilder` command instead of the `docker build`.
 
 Note: this info is RH only, it needs to be backported every time the `README.md` is synced with the upstream one.
 
-## Deploy machine API plane with minikube
+## Deploy machine API plane with kubernetes cluster
 
-1. **Install kvm**
+1. **Deploying the cluster**
 
-    Depending on your virtualization manager you can choose a different [driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md).
-    In order to install kvm, you can run (as described in the [drivers](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) documentation):
+    Use any existing mechanism for deploying the kubernetes cluster, e.g: kubeadm https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/
 
-    ```sh
-    $ sudo yum install libvirt-daemon-kvm qemu-kvm libvirt-daemon-config-network
-    $ systemctl start libvirtd
-    $ sudo usermod -a -G libvirt $(whoami)
-    $ newgrp libvirt
-    ```
+2. **Deploying machine API controllers**
 
-    To install to kvm2 driver:
-
-    ```sh
-    curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
-    && chmod +x docker-machine-driver-kvm2 \
-    && sudo cp docker-machine-driver-kvm2 /usr/local/bin/ \
-    && rm docker-machine-driver-kvm2
-    ```
-
-2. **Deploying the cluster**
-
-    To install minikube `v1.1.0`, you can run:
-
-    ```sg
-    $ curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.1.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
-    ```
-
-    To deploy the cluster:
-
-    ```
-    $ minikube start --vm-driver kvm2 --kubernetes-version v1.13.1 --v 5
-    $ eval $(minikube docker-env)
-    ```
-
-3. **Deploying machine API controllers**
-
-    For development purposes the aws machine controller itself will run out of the machine API stack.
+    For development purposes the powervs machine controller itself will run out of the machine API stack.
     Otherwise, docker images needs to be built, pushed into a docker registry and deployed within the stack.
 
     To deploy the stack:
@@ -61,7 +29,7 @@ Note: this info is RH only, it needs to be backported every time the `README.md`
     kustomize build config | kubectl apply -f -
     ```
 
-4. **Deploy secret with Power VS credentials**
+3. **Deploy secret with Power VS credentials**
 
    Power VS nodeupdate controller assumes existence of a secret file:
 
@@ -83,28 +51,6 @@ Note: this info is RH only, it needs to be backported every time the `README.md`
    ```
 
    Go to [How to create IBM Cloud API Key](#How-to-create-IBM-Cloud-API-Key) for creating API Key
-
-5. **Provision AWS resource**
-
-   The actuator expects existence of certain resource in AWS such as:
-   - vpc
-   - subnets
-   - security groups
-   - etc.
-
-   To create them, you can run:
-
-   ```sh
-   $ ENVIRONMENT_ID=aws-actuator-k8s ./hack/aws-provision.sh install
-   ```
-
-   To delete the resources, you can run:
-
-   ```sh
-   $ ENVIRONMENT_ID=aws-actuator-k8s ./hack/aws-provision.sh destroy
-   ```
-
-   All machine manifests expect `ENVIRONMENT_ID` to be set to `aws-actuator-k8s`.
 
 ## Test locally built aws actuator
 

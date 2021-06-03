@@ -21,6 +21,16 @@ resources:
 - crds/machine.openshift.io.crd.yaml
 - crds/machineset.openshift.io.crd.yaml
 - crds/machinedeployment.openshift.io.crd.yaml
+- crds/machinehealthcheck.openshift.io.crd.yaml
 - rbac/rbac_role.yaml
 - rbac/rbac_role_binding.yaml
 - controllers/deployment.yaml
+- controllers/namespace.yaml
+
+images:
+  - name: openshift/origin-powervs-machine-controllers
+    newName: quay.io/powercloud/origin-powervs-machine-controllers
+    newTag: latest
+  - name: openshift/origin-machine-api-operator
+    newName: quay.io/powercloud/machine-api-operator
+    newTag: latest

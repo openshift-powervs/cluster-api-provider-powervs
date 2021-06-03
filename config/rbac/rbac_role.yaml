@@ -27,6 +27,8 @@ rules:
   - machinesets/status
   - machinedeployments
   - machinedeployments/status
+  - machinehealthchecks
+  - machinehealthchecks/status
   verbs:
   - get
   - list
@@ -108,9 +110,17 @@ rules:
   resources:
   - daemonsets
   verbs:
+  - get
   - list
   - watch
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:

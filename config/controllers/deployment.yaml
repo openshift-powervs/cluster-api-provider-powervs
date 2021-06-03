@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: machine-api-controllers
-  namespace: default
+  namespace: openshift-machine-api
   labels:
     api: clusterapi
     k8s-app: controller
@@ -36,19 +36,9 @@ spec:
         key: node.alpha.kubernetes.io/unreachable
         operator: Exists
       containers:
-      - name: controller-manager
-        image: openshift/origin-aws-machine-controllers:v4.0.0
-        command:
-        - "./manager"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 20Mi
-          limits:
-            cpu: 100m
-            memory: 30Mi
       - name: machine-controller
-        image: openshift/origin-aws-machine-controllers:v4.0.0
+        image: openshift/origin-powervs-machine-controllers:latest
+        imagePullPolicy: Always
         env:
           - name: NODE_NAME
             valueFrom:
@@ -61,6 +51,7 @@ spec:
           - --v=3
       - name: nodelink-controller
         image: openshift/origin-machine-api-operator:latest
+        imagePullPolicy: Always
         command:
           - /nodelink-controller
         args:
@@ -73,3 +64,38 @@ spec:
           limits:
             cpu: 100m
             memory: 30Mi
+      - name: machine-healthcheck-controller
+        image: openshift/origin-machine-api-operator:latest
+        imagePullPolicy: Always
+        command:
+          - /machine-healthcheck
+        args:
+          - --logtostderr=true
+          - --v=3
+          - --namespace=openshift-machine-api
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+        ports:
+          - containerPort: 9442
+            name: healthz
+            protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz
+            port: healthz
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: healthz
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1

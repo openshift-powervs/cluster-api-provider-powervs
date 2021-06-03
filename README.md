@@ -52,6 +52,13 @@ Note: this info is RH only, it needs to be backported every time the `README.md`
 
    Go to [How to create IBM Cloud API Key](#How-to-create-IBM-Cloud-API-Key) for creating API Key
 
+4. **Test by creating example machine**
+
+   ```shell
+   # Update the relevant fields like serviceInstanceID, imageID, subnets, keyName etc.. 
+   $ kubectl create -f examples/machine-with-user-data.yaml
+   $ kubectl create -f examples/userdata.yml
+   ```
 ## Test locally built aws actuator
 
 1. **Tear down machine-controller**

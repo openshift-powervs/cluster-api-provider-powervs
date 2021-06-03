@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-
 	//"github.com/prometheus/common/log"
 
 	"github.com/IBM-Cloud/bluemix-go"
@@ -239,7 +238,7 @@ func (p *powerVSClient) GetInstances() (*models.PVMInstances, error) {
 	return p.InstanceClient.GetAll(p.cloudInstanceID, TIMEOUT)
 }
 
-func (p *powerVSClient) GetCloudInstances() ([]bluemixmodels.ServiceInstanceV2, error) {
+func (p *powerVSClient) GetCloudServiceInstances() ([]bluemixmodels.ServiceInstanceV2, error) {
 	var instances []bluemixmodels.ServiceInstanceV2
 	svcs, err := p.ResourceClient.ListInstances(controllerv2.ServiceInstanceQuery{
 		Type: "service_instance",

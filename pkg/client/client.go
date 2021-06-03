@@ -31,5 +31,5 @@ type Client interface {
 	GetInstanceByName(name string) (*models.PVMInstance, error)
 	GetInstances() (*models.PVMInstances, error)
 	DeleteInstance(id string) error
-	GetCloudInstances() ([]bluemixmodels.ServiceInstanceV2, error)
+	GetCloudServiceInstances() ([]bluemixmodels.ServiceInstanceV2, error)
 }

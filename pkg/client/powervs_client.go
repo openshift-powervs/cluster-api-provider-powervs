@@ -89,31 +89,6 @@ func GetAPIKey(ctrlRuntimeClient client.Client, secretName, namespace string) (a
 	return
 }
 
-func newBXSession(ctrlRuntimeClient client.Client, secretName, namespace, region string, configManagedClient client.Client) (*bxsession.Session, error) {
-	var apiKey string
-	if secretName != "" {
-		var secret corev1.Secret
-		if err := ctrlRuntimeClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: secretName}, &secret); err != nil {
-			if apimachineryerrors.IsNotFound(err) {
-				return nil, machineapiapierrors.InvalidMachineConfiguration("aws credentials secret %s/%s: %v not found", namespace, secretName, err)
-			}
-			return nil, err
-		}
-		var err error
-		apiKey, err = apiKeyFromSecret(&secret)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create shared credentials file from Secret: %v", err)
-		}
-	}
-
-	s, err := bxsession.New(&bluemix.Config{BluemixAPIKey: apiKey})
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
-}
-
 // getServiceURL returns the appropriate service URL for the VPC for given region or error
 func getServiceURL(region string) (string, error) {
 	switch region {

@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	//awsproviderv1 "github.com/openshift/cluster-api-provider-powervs/pkg/apis/awsprovider/v1beta1"
 )
 
 const (
@@ -113,40 +112,6 @@ func (r *Reconciler) delete() error {
 		})
 		return fmt.Errorf("failed to delete instaces: %w", err)
 	}
-	//// Get all instances not terminated.
-	//existingInstances, err := r.getMachineInstances()
-	//if err != nil {
-	//	metrics.RegisterFailedInstanceDelete(&metrics.MachineLabels{
-	//		Name:      r.machine.Name,
-	//		Namespace: r.machine.Namespace,
-	//		Reason:    err.Error(),
-	//	})
-	//	klog.Errorf("%s: error getting existing instances: %v", r.machine.Name, err)
-	//	return err
-	//}
-	//
-	//existingLen := len(existingInstances)
-	//klog.Infof("%s: found %d existing instances for machine", r.machine.Name, existingLen)
-	//if existingLen == 0 {
-	//	klog.Warningf("%s: no instances found to delete for machine", r.machine.Name)
-	//	return nil
-	//}
-	//
-	//terminatingInstances, err := terminateInstances(r.awsClient, existingInstances)
-	//if err != nil {
-	//	metrics.RegisterFailedInstanceDelete(&metrics.MachineLabels{
-	//		Name:      r.machine.Name,
-	//		Namespace: r.machine.Namespace,
-	//		Reason:    err.Error(),
-	//	})
-	//	return fmt.Errorf("failed to delete instaces: %w", err)
-	//}
-	//
-	//if len(terminatingInstances) == 1 {
-	//	if terminatingInstances[0] != nil && terminatingInstances[0].CurrentState != nil && terminatingInstances[0].CurrentState.Name != nil {
-	//		r.machine.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = aws.StringValue(terminatingInstances[0].CurrentState.Name)
-	//	}
-	//}
 
 	klog.Infof("Deleted machine %v", r.machine.Name)
 
@@ -172,60 +137,6 @@ func (r *Reconciler) update() error {
 		return err
 	}
 
-	//// Get all instances not terminated.
-	//existingInstances, err := r.getMachineInstances()
-	//if err != nil {
-	//	metrics.RegisterFailedInstanceUpdate(&metrics.MachineLabels{
-	//		Name:      r.machine.Name,
-	//		Namespace: r.machine.Namespace,
-	//		Reason:    err.Error(),
-	//	})
-	//	klog.Errorf("%s: error getting existing instances: %v", r.machine.Name, err)
-	//	return err
-	//}
-
-	//existingLen := len(existingInstances)
-	//if existingLen == 0 {
-	//	if r.machine.Spec.ProviderID != nil && *r.machine.Spec.ProviderID != "" && (r.machine.Status.LastUpdated == nil || r.machine.Status.LastUpdated.Add(requeueAfterSeconds*time.Second).After(time.Now())) {
-	//		klog.Infof("%s: Possible eventual-consistency discrepancy; returning an error to requeue", r.machine.Name)
-	//		return &machinecontroller.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
-	//	}
-	//
-	//	klog.Warningf("%s: attempted to update machine but no instances found", r.machine.Name)
-	//
-	//	// Update status to clear out machine details.
-	//	r.machineScope.setProviderStatus(nil, conditionSuccess())
-	//	// This is an unrecoverable error condition.  We should delay to
-	//	// minimize unnecessary API calls.
-	//	return &machinecontroller.RequeueAfterError{RequeueAfter: requeueAfterFatalSeconds * time.Second}
-	//}
-	//
-	//sortInstances(existingInstances)
-	//runningInstances := getRunningFromInstances(existingInstances)
-	//runningLen := len(runningInstances)
-	//var newestInstance *ec2.Instance
-	//
-	//if runningLen > 0 {
-	//	// It would be very unusual to have more than one here, but it is
-	//	// possible if someone manually provisions a machine with same tag name.
-	//	klog.Infof("%s: found %d running instances for machine", r.machine.Name, runningLen)
-	//	newestInstance = runningInstances[0]
-	//
-	//	err = r.updateLoadBalancers(newestInstance)
-	//	if err != nil {
-	//		metrics.RegisterFailedInstanceUpdate(&metrics.MachineLabels{
-	//			Name:      r.machine.Name,
-	//			Namespace: r.machine.Namespace,
-	//			Reason:    err.Error(),
-	//		})
-	//		return fmt.Errorf("failed to updated update load balancers: %w", err)
-	//	}
-	//} else {
-	//	// Didn't find any running instances, just newest existing one.
-	//	// In most cases, there should only be one existing Instance.
-	//	newestInstance = existingInstances[0]
-	//}
-
 	if err = r.setProviderID(existingInstance); err != nil {
 		return fmt.Errorf("failed to update machine object with providerID: %w", err)
 	}
@@ -233,10 +144,6 @@ func (r *Reconciler) update() error {
 	if err = r.setMachineCloudProviderSpecifics(existingInstance); err != nil {
 		return fmt.Errorf("failed to set machine cloud provider specifics: %w", err)
 	}
-
-	//if err = correctExistingTags(r.machine, existingInstance, r.awsClient); err != nil {
-	//	return fmt.Errorf("failed to correct existing instance tags: %w", err)
-	//}
 
 	klog.Infof("Updated machine %s", r.machine.Name)
 
@@ -260,30 +167,6 @@ func (r *Reconciler) exists() (bool, error) {
 		klog.Errorf("%s: error getting existing instances: %v", r.machine.Name, err)
 		return false, err
 	}
-
-	//// Get all instances not terminated.
-	//existingInstances, err := r.getMachineInstances()
-	//if err != nil {
-	//	// Reporting as update here, as successfull return value from the method
-	//	// later indicases that an instance update flow will be executed.
-	//	metrics.RegisterFailedInstanceUpdate(&metrics.MachineLabels{
-	//		Name:      r.machine.Name,
-	//		Namespace: r.machine.Namespace,
-	//		Reason:    err.Error(),
-	//	})
-	//	klog.Errorf("%s: error getting existing instances: %v", r.machine.Name, err)
-	//	return false, err
-	//}
-	//
-	//if len(existingInstances) == 0 {
-	//	if r.machine.Spec.ProviderID != nil && *r.machine.Spec.ProviderID != "" && (r.machine.Status.LastUpdated == nil || r.machine.Status.LastUpdated.Add(requeueAfterSeconds*time.Second).After(time.Now())) {
-	//		klog.Infof("%s: Possible eventual-consistency discrepancy; returning an error to requeue", r.machine.Name)
-	//		return false, &machinecontroller.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
-	//	}
-	//
-	//	klog.Infof("%s: Instance does not exist", r.machine.Name)
-	//	return false, nil
-	//}
 
 	if existingInstance == nil {
 		if r.machine.Spec.ProviderID != nil && *r.machine.Spec.ProviderID != "" && (r.machine.Status.LastUpdated == nil || r.machine.Status.LastUpdated.Add(requeueAfterSeconds*time.Second).After(time.Now())) {
@@ -321,45 +204,6 @@ func (r *Reconciler) isMaster() (bool, error) {
 	return false, nil
 }
 
-// updateLoadBalancers adds a given machine instance to the load balancers specified in its provider config
-//func (r *Reconciler) updateLoadBalancers(instance *ec2.Instance) error {
-//	if len(r.providerSpec.LoadBalancers) == 0 {
-//		klog.V(4).Infof("%s: Instance %q has no load balancers configured. Skipping", r.machine.Name, *instance.InstanceId)
-//		return nil
-//	}
-//	errs := []error{}
-//	classicLoadBalancerNames := []string{}
-//	networkLoadBalancerNames := []string{}
-//	for _, loadBalancerRef := range r.providerSpec.LoadBalancers {
-//		switch loadBalancerRef.Type {
-//		case awsproviderv1.NetworkLoadBalancerType:
-//			networkLoadBalancerNames = append(networkLoadBalancerNames, loadBalancerRef.Name)
-//		case awsproviderv1.ClassicLoadBalancerType:
-//			classicLoadBalancerNames = append(classicLoadBalancerNames, loadBalancerRef.Name)
-//		}
-//	}
-//
-//	var err error
-//	if len(classicLoadBalancerNames) > 0 {
-//		err := registerWithClassicLoadBalancers(r.awsClient, classicLoadBalancerNames, instance)
-//		if err != nil {
-//			klog.Errorf("%s: Failed to register classic load balancers: %v", r.machine.Name, err)
-//			errs = append(errs, err)
-//		}
-//	}
-//	if len(networkLoadBalancerNames) > 0 {
-//		err = registerWithNetworkLoadBalancers(r.awsClient, networkLoadBalancerNames, instance)
-//		if err != nil {
-//			klog.Errorf("%s: Failed to register network load balancers: %v", r.machine.Name, err)
-//			errs = append(errs, err)
-//		}
-//	}
-//	if len(errs) > 0 {
-//		return errorutil.NewAggregate(errs)
-//	}
-//	return nil
-//}
-
 // setProviderID adds providerID in the machine spec
 func (r *Reconciler) setProviderID(instance *models.PVMInstance) error {
 	existingProviderID := r.machine.Spec.ProviderID
@@ -396,33 +240,9 @@ func (r *Reconciler) setMachineCloudProviderSpecifics(instance *models.PVMInstan
 		r.machine.Annotations = make(map[string]string)
 	}
 
-	// Reaching to machine provider config since the region is not directly
-	// providing by *ec2.Instance object
-	//machineProviderConfig, err := awsproviderv1.ProviderSpecFromRawExtension(r.machine.Spec.ProviderSpec.Value)
-	//if err != nil {
-	//	return fmt.Errorf("error decoding MachineProviderConfig: %w", err)
-	//}
-	//
-	//r.machine.Labels[machinecontroller.MachineRegionLabelName] = machineProviderConfig.Placement.Region
-
-	//if instance.Placement != nil {
-	//	r.machine.Labels[machinecontroller.MachineAZLabelName] = aws.StringValue(instance.Placement.AvailabilityZone)
-	//}
-
-	//if instance.InstanceType != nil {
-	//	r.machine.Labels[machinecontroller.MachineInstanceTypeLabelName] = aws.StringValue(instance.InstanceType)
-	//}
-
 	if instance.Status != nil {
 		r.machine.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = *instance.Status
 	}
-
-	//if instance.InstanceLifecycle != nil && *instance.InstanceLifecycle == ec2.InstanceLifecycleTypeSpot {
-	//	// Label on the Machine so that an MHC can select spot instances
-	//	r.machine.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
-	//	// Label on the Spec so that it is propogated to the Node
-	//	r.machine.Spec.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
-	//}
 
 	return nil
 }
@@ -454,19 +274,3 @@ func (r *Reconciler) getMachineInstance() (*models.PVMInstance, error) {
 
 	return r.powerVSClient.GetInstanceByName(r.machine.Name)
 }
-
-//func (r *Reconciler) getMachineInstances() ([]*ec2.Instance, error) {
-//	// If there is a non-empty instance ID, search using that, otherwise
-//	// fallback to filtering based on tags.
-//	if r.providerStatus.InstanceID != nil && *r.providerStatus.InstanceID != "" {
-//		i, err := getExistingInstanceByID(*r.providerStatus.InstanceID, r.awsClient)
-//		if err != nil {
-//			klog.Warningf("%s: Failed to find existing instance by id %s: %v", r.machine.Name, *r.providerStatus.InstanceID, err)
-//		} else {
-//			klog.Infof("%s: Found instance by id: %s", r.machine.Name, *r.providerStatus.InstanceID)
-//			return []*ec2.Instance{i}, nil
-//		}
-//	}
-//
-//	return getExistingInstances(r.machine, r.awsClient)
-//}

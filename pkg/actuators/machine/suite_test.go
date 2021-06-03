@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	defer cancel()
 
 	k8sClient = mgr.GetClient()
-	eventRecorder = mgr.GetEventRecorderFor("awscontroller")
+	eventRecorder = mgr.GetEventRecorderFor("powervscontroller")
 
 	code := m.Run()
 	os.Exit(code)

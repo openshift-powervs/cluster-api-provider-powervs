@@ -7,8 +7,7 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	powervsproviderv1 "github.com/openshift/cluster-api-provider-powervs/pkg/apis/powervsprovider/v1alpha1"
 
-	//awsproviderv1 "github.com/openshift/cluster-api-provider-powervs/pkg/apis/awsprovider/v1beta1"
-	awsclient "github.com/openshift/cluster-api-provider-powervs/pkg/client"
+	powervsclient "github.com/openshift/cluster-api-provider-powervs/pkg/client"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machineapierros "github.com/openshift/machine-api-operator/pkg/controller/machine"
 	corev1 "k8s.io/api/core/v1"
@@ -27,8 +26,7 @@ var dhcpDomainKeyName = "domain-name"
 type machineScopeParams struct {
 	context.Context
 
-	//awsClientBuilder awsclient.AwsClientBuilderFuncType
-	powerVSClientBuilder awsclient.PowerVSClientBuilderFuncType
+	powerVSClientBuilder powervsclient.PowerVSClientBuilderFuncType
 	// api server controller runtime client
 	client runtimeclient.Client
 	// machine resource
@@ -40,11 +38,8 @@ type machineScopeParams struct {
 type machineScope struct {
 	context.Context
 
-	// client for interacting with AWS
-	//awsClient awsclient.Client
-
 	// powerVSClient for interacting with powervs
-	powerVSClient awsclient.Client
+	powerVSClient powervsclient.Client
 
 	// api server controller runtime client
 	client runtimeclient.Client
@@ -71,19 +66,13 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		credentialsSecretName = providerSpec.CredentialsSecret.Name
 	}
 
-	//awsClient, err := params.awsClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.Placement.Region, params.configManagedClient)
-	//if err != nil {
-	//	return nil, machineapierros.InvalidMachineConfiguration("failed to create aws client: %v", err.Error())
-	//}
-
 	powerVSClient, err := params.powerVSClientBuilder(params.client, credentialsSecretName, params.machine.Namespace, providerSpec.ServiceInstanceID, providerSpec.Region)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("failed to create powervs client: %v", err.Error())
 	}
 
 	return &machineScope{
-		Context: params.Context,
-		//awsClient:          awsClient,
+		Context:            params.Context,
 		powerVSClient:      powerVSClient,
 		client:             params.client,
 		machine:            params.machine,
@@ -184,36 +173,3 @@ func (s *machineScope) setProviderStatus(instance *models.PVMInstance, condition
 	s.machine.Status.Addresses = networkAddresses
 	s.providerStatus.Conditions = setPowerVSMachineProviderCondition(condition, s.providerStatus.Conditions)
 }
-
-//func (s *machineScope) getCustomDomainFromDHCP(vpcID *string) ([]string, error) {
-//	vpc, err := s.awsClient.DescribeVpcs(&ec2.DescribeVpcsInput{
-//		VpcIds: []*string{vpcID},
-//	})
-//	if err != nil {
-//		klog.Errorf("%s: error describing vpc: %v", s.machine.Name, err)
-//		return nil, err
-//	}
-//
-//	if len(vpc.Vpcs) == 0 || vpc.Vpcs[0] == nil || vpc.Vpcs[0].DhcpOptionsId == nil {
-//		return nil, nil
-//	}
-//
-//	dhcp, err := s.awsClient.DescribeDHCPOptions(&ec2.DescribeDhcpOptionsInput{
-//		DhcpOptionsIds: []*string{vpc.Vpcs[0].DhcpOptionsId},
-//	})
-//	if err != nil {
-//		klog.Errorf("%s: error describing dhcp: %v", s.machine.Name, err)
-//		return nil, err
-//	}
-//
-//	if dhcp == nil || len(dhcp.DhcpOptions) == 0 || dhcp.DhcpOptions[0] == nil {
-//		return nil, nil
-//	}
-//
-//	for _, i := range dhcp.DhcpOptions[0].DhcpConfigurations {
-//		if i.Key != nil && *i.Key == dhcpDomainKeyName && len(i.Values) > 0 && i.Values[0] != nil && i.Values[0].Value != nil {
-//			return strings.Split(*i.Values[0].Value, " "), nil
-//		}
-//	}
-//	return nil, nil
-//}

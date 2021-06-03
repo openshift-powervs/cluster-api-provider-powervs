@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	awsclient "github.com/openshift/cluster-api-provider-powervs/pkg/client"
+	powervsclient "github.com/openshift/cluster-api-provider-powervs/pkg/client"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -39,28 +39,25 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	client        runtimeclient.Client
-	eventRecorder record.EventRecorder
-	//awsClientBuilder    awsclient.AwsClientBuilderFuncType
-	powerVSClientBuilder awsclient.PowerVSClientBuilderFuncType
+	client               runtimeclient.Client
+	eventRecorder        record.EventRecorder
+	powerVSClientBuilder powervsclient.PowerVSClientBuilderFuncType
 	configManagedClient  runtimeclient.Client
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	Client        runtimeclient.Client
-	EventRecorder record.EventRecorder
-	//AwsClientBuilder    awsclient.AwsClientBuilderFuncType
-	PowerVSClientBuilder awsclient.PowerVSClientBuilderFuncType
+	Client               runtimeclient.Client
+	EventRecorder        record.EventRecorder
+	PowerVSClientBuilder powervsclient.PowerVSClientBuilderFuncType
 	ConfigManagedClient  runtimeclient.Client
 }
 
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		client:        params.Client,
-		eventRecorder: params.EventRecorder,
-		//awsClientBuilder:    params.AwsClientBuilder,
+		client:               params.Client,
+		eventRecorder:        params.EventRecorder,
 		powerVSClientBuilder: params.PowerVSClientBuilder,
 		configManagedClient:  params.ConfigManagedClient,
 	}
@@ -80,10 +77,9 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: actuator creating machine", machine.GetName())
 	scope, err := newMachineScope(machineScopeParams{
-		Context: ctx,
-		client:  a.client,
-		machine: machine,
-		//awsClientBuilder:    a.awsClientBuilder,
+		Context:              ctx,
+		client:               a.client,
+		machine:              machine,
 		powerVSClientBuilder: a.powerVSClientBuilder,
 		configManagedClient:  a.configManagedClient,
 	})
@@ -107,10 +103,9 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: actuator checking if machine exists", machine.GetName())
 	scope, err := newMachineScope(machineScopeParams{
-		Context: ctx,
-		client:  a.client,
-		machine: machine,
-		//awsClientBuilder:    a.awsClientBuilder,
+		Context:              ctx,
+		client:               a.client,
+		machine:              machine,
 		powerVSClientBuilder: a.powerVSClientBuilder,
 		configManagedClient:  a.configManagedClient,
 	})
@@ -124,10 +119,9 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: actuator updating machine", machine.GetName())
 	scope, err := newMachineScope(machineScopeParams{
-		Context: ctx,
-		client:  a.client,
-		machine: machine,
-		//awsClientBuilder:    a.awsClientBuilder,
+		Context:              ctx,
+		client:               a.client,
+		machine:              machine,
 		powerVSClientBuilder: a.powerVSClientBuilder,
 		configManagedClient:  a.configManagedClient,
 	})
@@ -164,10 +158,9 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: actuator deleting machine", machine.GetName())
 	scope, err := newMachineScope(machineScopeParams{
-		Context: ctx,
-		client:  a.client,
-		machine: machine,
-		//awsClientBuilder:    a.awsClientBuilder,
+		Context:              ctx,
+		client:               a.client,
+		machine:              machine,
 		powerVSClientBuilder: a.powerVSClientBuilder,
 		configManagedClient:  a.configManagedClient,
 	})

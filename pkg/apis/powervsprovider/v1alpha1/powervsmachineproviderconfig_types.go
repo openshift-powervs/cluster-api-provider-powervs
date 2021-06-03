@@ -88,7 +88,7 @@ type PowerVSMachineProviderConfig struct {
 	KeyName *string `json:"keyName,omitempty"`
 }
 
-// LoadBalancerReference is a reference to a load balancer on AWS.
+// LoadBalancerReference is a reference to a load balancer on PowerVS.
 type LoadBalancerReference struct {
 	// The load balancer identifier.
 	ID string `json:"id"`

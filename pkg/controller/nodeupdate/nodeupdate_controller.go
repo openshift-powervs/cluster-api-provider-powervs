@@ -3,7 +3,9 @@ package nodeupdate
 import (
 	"context"
 	"fmt"
+	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
 	"github.com/IBM-Cloud/power-go-client/power/models"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +24,8 @@ import (
 const (
 	requeueDurationWhenVMNotReady = 1 * time.Minute
 	requeueDurationWhenVMNotFound = 2 * time.Minute
+	//TODO: should this value be flag driven
+	kConcurrencyLimit = 5
 )
 
 var _ reconcile.Reconciler = &providerIDReconciler{}
@@ -68,33 +72,55 @@ func (r *providerIDReconciler) Reconcile(ctx context.Context, request reconcile.
 		return reconcile.Result{}, fmt.Errorf("%s: failed to create NewClientMinimal, with error: %v", node.Name, err)
 	}
 
-	instances, err := c.GetCloudInstances()
+	serviceInstances, err := c.GetCloudServiceInstances()
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("%s: failed to get the cloud instances, with error: %v", node.Name, err)
 	}
 
 	var instance *models.PVMInstanceReference
-	// TODO: Need to add concurrency
-out:
-	for _, i := range instances {
-		cl, err := powervsclient.NewValidatedClient(r.client, powervsclient.DefaultCredentialSecret, powervsclient.DefaultCredentialNamespace, i.Guid, "")
-		if err != nil {
-			return reconcile.Result{}, fmt.Errorf("%s: failed to create NewValidatedClient, with error: %v", node.Name, err)
-		}
+	//TODO: Consider initializing at package level, if needed
+	concurrencyController := make(chan struct{}, kConcurrencyLimit)
+	resultChan := make(chan serviceInstanceResult, len(serviceInstances))
+	done := make(chan interface{})
+	var errMsg error
+	var wg sync.WaitGroup
+	for _, i := range serviceInstances {
+		//Setting the concurrency controller
+		concurrencyController <- struct{}{}
 
-		ins, err := cl.GetInstances()
-		if ins == nil {
-			return reconcile.Result{}, fmt.Errorf("%s: failed to GetInstances for %s, with error: %v", node.Name, i.Name, err)
-		}
-
-		for _, in := range ins.PvmInstances {
-			if *in.ServerName == node.Name {
-				instance = in
-				break out
+		//Get service instances
+		go func(serviceInstance bluemixmodels.ServiceInstanceV2) {
+			select {
+			case <- done:
+				return
+			default:
+				wg.Add(1)
+				r.getInstances(serviceInstance, node.Name, resultChan, concurrencyController, &wg)
 			}
+		}(i)
+
+		//read the result channel to process the output
+		go func() {
+			for i := 1; i <= len(serviceInstances); i++{
+				res := <-resultChan
+				if res.err != nil{
+					klog.Error(res.err)
+					errMsg = res.err
+					return
+				}else if res.instance != nil {
+					instance = res.instance
+					return
+				}
+			}
+		}()
+		if instance != nil{
+			break
+		}else if errMsg != nil{
+			return reconcile.Result{}, errMsg
 		}
 	}
-
+	//Wait for the completion of called getInstance method
+	wg.Wait()
 	if instance != nil {
 		node.Spec.ProviderID = powervsclient.FormatProviderID(*instance.PvmInstanceID)
 	} else {
@@ -118,6 +144,45 @@ out:
 	}
 
 	return reconcile.Result{}, nil
+}
+
+type serviceInstanceResult struct {
+	err    error
+	instance *models.PVMInstanceReference
+}
+
+func (r *providerIDReconciler) getInstances (serviceInstance bluemixmodels.ServiceInstanceV2, nodeName string,
+	resultChan chan serviceInstanceResult, concurrencyController chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var result serviceInstanceResult
+	var instance *models.PVMInstanceReference
+	cl, err := powervsclient.NewValidatedClient(r.client, powervsclient.DefaultCredentialSecret, powervsclient.DefaultCredentialNamespace, serviceInstance.Guid, "")
+	if err != nil {
+		result = serviceInstanceResult{
+			err:      fmt.Errorf("%s: failed to create NewValidatedClient, with error: %v", nodeName, err),
+		}
+		resultChan <- result
+		return
+	}
+
+	ins, err := cl.GetInstances()
+	if ins == nil {
+		result = serviceInstanceResult{
+			err:      fmt.Errorf("%s: failed to GetInstances for %s, with error: %v", nodeName, serviceInstance.Name, err),
+		}
+		resultChan <- result
+		return
+	}
+	for _, in := range ins.PvmInstances {
+		if *in.ServerName == nodeName {
+			instance = in
+			break
+		}
+	}
+	result = serviceInstanceResult{
+		instance: instance,
+	}
+	<-concurrencyController
 }
 
 // Add registers a new provider ID reconciler controller with the controller manager

@@ -81,38 +81,37 @@ func (r *providerIDReconciler) Reconcile(ctx context.Context, request reconcile.
 	//TODO: Consider initializing at package level, if needed
 	concurrencyController := make(chan struct{}, kConcurrencyLimit)
 	resultChan := make(chan serviceInstanceResult, len(serviceInstances))
-	done := make(chan interface{})
 	var errMsg error
-	var wg sync.WaitGroup
-	for _, i := range serviceInstances {
+	var producerWg, receiverWg sync.WaitGroup
+	receiverWg.Add(1)
+	for index, i := range serviceInstances {
+		producerWg.Add(1)
 		//Setting the concurrency controller
 		concurrencyController <- struct{}{}
 
 		//Get service instances
 		go func(serviceInstance bluemixmodels.ServiceInstanceV2) {
-			select {
-			case <- done:
-				return
-			default:
-				wg.Add(1)
-				r.getInstances(serviceInstance, node.Name, resultChan, concurrencyController, &wg)
-			}
+			defer producerWg.Done()
+			r.getInstances(serviceInstance, node.Name, resultChan, concurrencyController)
 		}(i)
 
-		//read the result channel to process the output
-		go func() {
-			for i := 1; i <= len(serviceInstances); i++{
-				res := <-resultChan
-				if res.err != nil{
-					klog.Error(res.err)
-					errMsg = res.err
-					return
-				}else if res.instance != nil {
-					instance = res.instance
-					return
+		//Call only once in a loop and read the result channel to process the output
+		if index == 0 {
+			go func() {
+				defer receiverWg.Done()
+				for i := 1; i <= len(serviceInstances); i++{
+					res := <-resultChan
+					if res.err != nil{
+						klog.Error(res.err)
+						errMsg = res.err
+						return
+					}else if res.instance != nil {
+						instance = res.instance
+						return
+					}
 				}
-			}
-		}()
+			}()
+		}
 		if instance != nil{
 			break
 		}else if errMsg != nil{
@@ -120,7 +119,9 @@ func (r *providerIDReconciler) Reconcile(ctx context.Context, request reconcile.
 		}
 	}
 	//Wait for the completion of called getInstance method
-	wg.Wait()
+	producerWg.Wait()
+	//Wait for the completion of reading results
+	receiverWg.Wait()
 	if instance != nil {
 		node.Spec.ProviderID = powervsclient.FormatProviderID(*instance.PvmInstanceID)
 	} else {
@@ -152,8 +153,7 @@ type serviceInstanceResult struct {
 }
 
 func (r *providerIDReconciler) getInstances (serviceInstance bluemixmodels.ServiceInstanceV2, nodeName string,
-	resultChan chan serviceInstanceResult, concurrencyController chan struct{}, wg *sync.WaitGroup) {
-	defer wg.Done()
+	resultChan chan serviceInstanceResult, concurrencyController chan struct{}) {
 	var result serviceInstanceResult
 	var instance *models.PVMInstanceReference
 	cl, err := powervsclient.NewValidatedClient(r.client, powervsclient.DefaultCredentialSecret, powervsclient.DefaultCredentialNamespace, serviceInstance.Guid, "")
@@ -182,6 +182,7 @@ func (r *providerIDReconciler) getInstances (serviceInstance bluemixmodels.Servi
 	result = serviceInstanceResult{
 		instance: instance,
 	}
+	resultChan <- result
 	<-concurrencyController
 }
 

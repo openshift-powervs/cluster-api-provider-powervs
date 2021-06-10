@@ -155,6 +155,9 @@ type serviceInstanceResult struct {
 
 func (r *providerIDReconciler) getInstances(serviceInstance bluemixmodels.ServiceInstanceV2, nodeName string,
 	resultChan chan serviceInstanceResult, concurrencyController chan struct{}) {
+	defer func() {
+		<-concurrencyController
+	}()
 	var result serviceInstanceResult
 	var instance *models.PVMInstanceReference
 	cl, err := powervsclient.NewValidatedClient(r.client, powervsclient.DefaultCredentialSecret, powervsclient.DefaultCredentialNamespace, serviceInstance.Guid, "")
@@ -184,7 +187,6 @@ func (r *providerIDReconciler) getInstances(serviceInstance bluemixmodels.Servic
 		instance: instance,
 	}
 	resultChan <- result
-	<-concurrencyController
 }
 
 // Add registers a new provider ID reconciler controller with the controller manager

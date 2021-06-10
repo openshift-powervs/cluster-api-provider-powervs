@@ -7,8 +7,9 @@ package mock
 import (
 	reflect "reflect"
 
+	models "github.com/IBM-Cloud/bluemix-go/models"
 	p_cloud_p_vm_instances "github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
-	models "github.com/IBM-Cloud/power-go-client/power/models"
+	models0 "github.com/IBM-Cloud/power-go-client/power/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,10 +37,10 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CreateInstance mocks base method
-func (m *MockClient) CreateInstance(arg0 *p_cloud_p_vm_instances.PcloudPvminstancesPostParams) (*models.PVMInstanceList, error) {
+func (m *MockClient) CreateInstance(arg0 *p_cloud_p_vm_instances.PcloudPvminstancesPostParams) (*models0.PVMInstanceList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateInstance", arg0)
-	ret0, _ := ret[0].(*models.PVMInstanceList)
+	ret0, _ := ret[0].(*models0.PVMInstanceList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +52,10 @@ func (mr *MockClientMockRecorder) CreateInstance(arg0 interface{}) *gomock.Call 
 }
 
 // GetInstance mocks base method
-func (m *MockClient) GetInstance(id string) (*models.PVMInstance, error) {
+func (m *MockClient) GetInstance(id string) (*models0.PVMInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInstance", id)
-	ret0, _ := ret[0].(*models.PVMInstance)
+	ret0, _ := ret[0].(*models0.PVMInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +67,10 @@ func (mr *MockClientMockRecorder) GetInstance(id interface{}) *gomock.Call {
 }
 
 // GetInstanceByName mocks base method
-func (m *MockClient) GetInstanceByName(name string) (*models.PVMInstance, error) {
+func (m *MockClient) GetInstanceByName(name string) (*models0.PVMInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInstanceByName", name)
-	ret0, _ := ret[0].(*models.PVMInstance)
+	ret0, _ := ret[0].(*models0.PVMInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +82,10 @@ func (mr *MockClientMockRecorder) GetInstanceByName(name interface{}) *gomock.Ca
 }
 
 // GetInstances mocks base method
-func (m *MockClient) GetInstances() (*models.PVMInstances, error) {
+func (m *MockClient) GetInstances() (*models0.PVMInstances, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInstances")
-	ret0, _ := ret[0].(*models.PVMInstances)
+	ret0, _ := ret[0].(*models0.PVMInstances)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -107,4 +108,19 @@ func (m *MockClient) DeleteInstance(id string) error {
 func (mr *MockClientMockRecorder) DeleteInstance(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockClient)(nil).DeleteInstance), id)
+}
+
+// GetCloudServiceInstances mocks base method
+func (m *MockClient) GetCloudServiceInstances() ([]models.ServiceInstanceV2, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCloudServiceInstances")
+	ret0, _ := ret[0].([]models.ServiceInstanceV2)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCloudServiceInstances indicates an expected call of GetCloudServiceInstances
+func (mr *MockClientMockRecorder) GetCloudServiceInstances() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCloudServiceInstances", reflect.TypeOf((*MockClient)(nil).GetCloudServiceInstances))
 }

@@ -3,10 +3,11 @@ package nodeupdate
 import (
 	"context"
 	"fmt"
-	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
-	"github.com/IBM-Cloud/power-go-client/power/models"
 	"sync"
 	"time"
+
+	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
+	"github.com/IBM-Cloud/power-go-client/power/models"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -99,22 +100,22 @@ func (r *providerIDReconciler) Reconcile(ctx context.Context, request reconcile.
 		if index == 0 {
 			go func() {
 				defer receiverWg.Done()
-				for i := 1; i <= len(serviceInstances); i++{
+				for i := 1; i <= len(serviceInstances); i++ {
 					res := <-resultChan
-					if res.err != nil{
+					if res.err != nil {
 						klog.Error(res.err)
 						errMsg = res.err
 						return
-					}else if res.instance != nil {
+					} else if res.instance != nil {
 						instance = res.instance
 						return
 					}
 				}
 			}()
 		}
-		if instance != nil{
+		if instance != nil {
 			break
-		}else if errMsg != nil{
+		} else if errMsg != nil {
 			return reconcile.Result{}, errMsg
 		}
 	}
@@ -148,18 +149,18 @@ func (r *providerIDReconciler) Reconcile(ctx context.Context, request reconcile.
 }
 
 type serviceInstanceResult struct {
-	err    error
+	err      error
 	instance *models.PVMInstanceReference
 }
 
-func (r *providerIDReconciler) getInstances (serviceInstance bluemixmodels.ServiceInstanceV2, nodeName string,
+func (r *providerIDReconciler) getInstances(serviceInstance bluemixmodels.ServiceInstanceV2, nodeName string,
 	resultChan chan serviceInstanceResult, concurrencyController chan struct{}) {
 	var result serviceInstanceResult
 	var instance *models.PVMInstanceReference
 	cl, err := powervsclient.NewValidatedClient(r.client, powervsclient.DefaultCredentialSecret, powervsclient.DefaultCredentialNamespace, serviceInstance.Guid, "")
 	if err != nil {
 		result = serviceInstanceResult{
-			err:      fmt.Errorf("%s: failed to create NewValidatedClient, with error: %v", nodeName, err),
+			err: fmt.Errorf("%s: failed to create NewValidatedClient, with error: %v", nodeName, err),
 		}
 		resultChan <- result
 		return
@@ -168,7 +169,7 @@ func (r *providerIDReconciler) getInstances (serviceInstance bluemixmodels.Servi
 	ins, err := cl.GetInstances()
 	if ins == nil {
 		result = serviceInstanceResult{
-			err:      fmt.Errorf("%s: failed to GetInstances for %s, with error: %v", nodeName, serviceInstance.Name, err),
+			err: fmt.Errorf("%s: failed to GetInstances for %s, with error: %v", nodeName, serviceInstance.Name, err),
 		}
 		resultChan <- result
 		return

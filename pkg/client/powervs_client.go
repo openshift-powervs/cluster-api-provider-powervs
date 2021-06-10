@@ -3,11 +3,17 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
-	//"github.com/prometheus/common/log"
+	gohttp "net/http"
+	"strings"
+	"time"
 
 	"github.com/IBM-Cloud/bluemix-go"
+	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
+	"github.com/IBM-Cloud/bluemix-go/authentication"
+	"github.com/IBM-Cloud/bluemix-go/http"
 	bluemixmodels "github.com/IBM-Cloud/bluemix-go/models"
+	"github.com/IBM-Cloud/bluemix-go/rest"
+	bxsession "github.com/IBM-Cloud/bluemix-go/session"
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -15,25 +21,12 @@ import (
 	"github.com/IBM/go-sdk-core/v4/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
-	//"github.com/openshift/cluster-api-provider-ibmcloud/pkg"
-	"time"
-
-	utils "github.com/ppc64le-cloud/powervs-utils"
-
-	gohttp "net/http"
-	"strings"
-
-	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
-	"github.com/IBM-Cloud/bluemix-go/authentication"
-	"github.com/IBM-Cloud/bluemix-go/http"
-	"github.com/IBM-Cloud/bluemix-go/rest"
-	bxsession "github.com/IBM-Cloud/bluemix-go/session"
 	"github.com/dgrijalva/jwt-go"
 	machineapiapierrors "github.com/openshift/machine-api-operator/pkg/controller/machine"
+	"github.com/pkg/errors"
+	utils "github.com/ppc64le-cloud/powervs-utils"
 	corev1 "k8s.io/api/core/v1"
 	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
-
-	//"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

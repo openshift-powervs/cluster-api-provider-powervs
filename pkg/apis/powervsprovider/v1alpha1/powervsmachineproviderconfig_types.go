@@ -24,21 +24,6 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// PowerVSMachineProviderConfigSpec defines the desired state of PowerVSMachineProviderConfig
-type PowerVSMachineProviderConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of PowerVSMachineProviderConfig. Edit powervsmachineproviderconfig_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
-}
-
-// PowerVSMachineProviderConfigStatus defines the observed state of PowerVSMachineProviderConfig
-type PowerVSMachineProviderConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
@@ -46,9 +31,6 @@ type PowerVSMachineProviderConfigStatus struct {
 type PowerVSMachineProviderConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   PowerVSMachineProviderConfigSpec   `json:"spec,omitempty"`
-	Status PowerVSMachineProviderConfigStatus `json:"status,omitempty"`
 
 	// Region for VPC client for load balancer
 	Region string `json:"region,omitempty"`

@@ -4,7 +4,6 @@ metadata:
   labels:
     controller-tools.k8s.io: "1.0"
   name: machinesets.machine.openshift.io
-  namespace: openshift-machine-api
 spec:
   group: machine.openshift.io
   names:

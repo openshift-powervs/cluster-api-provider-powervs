@@ -18,10 +18,6 @@ spec:
         machine.openshift.io/cluster-api-machineset: test-master
         machine.openshift.io/cluster-api-cluster: powervs-k8s-cluster
     spec:
-      metadata:
-        labels:
-          node-role.kubernetes.io/master: ""
-          node-role.kubernetes.io/infra: ""
       providerSpec:
         value:
           apiVersion: powervsproviderconfig.openshift.io/v1alpha1
